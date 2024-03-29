@@ -1,0 +1,51 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: dc6191e508da4f6eb113611411a5ac74
+      name: ODI_SERGIU_TEMPLATES
+  templates:
+    - uuid: 0e89e390e2fa4632bd45ebc9ab54d8f9
+      template: ODI_SPC_TRAP
+      name: ODI_SPC_TRAP
+      groups:
+        - name: ODI_SERGIU_TEMPLATES
+      tags:
+        - tag: done
+    - uuid: 8de4d03ad1f34d6d98d87547aa9148a5
+      template: ODI_SPC_WATCHDOG
+      name: ODI_SPC_WATCHDOG
+      groups:
+        - name: ODI_SERGIU_TEMPLATES
+      discovery_rules:
+        - uuid: 3436fd97ce5944d7956a9f87a48743f4
+          name: 'Setup watchdog traps monitoring'
+          type: SCRIPT
+          key: watchdog.monitoring.setup
+          delay: 10s
+          params: 'return JSON.parse(value).data'
+          item_prototypes:
+            - uuid: 19324cead1684ac487d475c9df36a2f7
+              name: 'Watchdog tick {#EVENT_ID}'
+              type: SNMP_TRAP
+              key: 'snmptrap[{#EVENT_ID}]'
+              delay: '0'
+              history: 30d
+              description: '{#DESCRIPTION}'
+              trigger_prototypes:
+                - uuid: eb0b8b27510949e5b172e96660e7dbf2
+                  expression: 'nodata(/ODI_SPC_WATCHDOG/snmptrap[{#EVENT_ID}],{#LATE_INTERVAL})=0'
+                  name: 'No watchdog trap received for eventId {#EVENT_ID}'
+                  priority: AVERAGE
+                  description: '{#DESCRIPTION}'
+                  tags:
+                    - tag: SU_ID
+                      value: '{#SU_ID}'
+          parameters:
+            - name: data
+              value: '{$ODI_SPC_WATCHDOG.CFG}'
+      tags:
+        - tag: done
+      macros:
+        - macro: '{$ODI_SPC_WATCHDOG.CFG}'
+          value: '[]'
+          description: '{   "SU_ID":"%(SU_ID)s",   "{#EVENT_ID}":"%(EVENT_ID)s",   "{#LATE_INTERVAL}":"%(LateInterval)s",   "{#DESCRIPTION}":"%(Description)s" }'
